@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simulation-Based Inference with BayesFlow</title>
+    <link rel="stylesheet" href="bayesflow_styles.css">
+    <link rel="icon" type="image/png" href="assets/images/magnetar.png?v=1">
+</head>
+<body>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-mml-chtml.js"></script>
+    <a href="index.html" class="back-btn">&#8592; Back</a>
+    <header>
+        <h1>Simulation-Based Inference with BayesFlow</h1>
+        <p class="title">Simulation-Based Inference with BayesFlow</p>
+    </header>
+    <main>
+        <section class="section">
+            <h2>What is Simulation-Based Inference (SBI)?</h2>
+            <p>
+                Imagine you have a complex game, like a realistic flight simulator. You can easily play the game (run a simulation) to see what happens when you adjust the controls. But what if you wanted to do the opposite? What if you wanted to figure out the exact settings (the parameters) of the controls that would lead to a very specific landing pattern you observed? That's what simulation-based inference (SBI) is all about. Instead of having a neat mathematical formula for the outcome, you only have the "simulator." SBI uses a machine learning approach to work backward, taking observed data from a real-world system and finding the underlying parameters that most likely generated it.
+            </p>
+            <p>
+                Coming to a more real-world example, we can consider the example of measuring CO2 concentration in the atmosphere based on satellite information. These sattelites collect spectra of CO2 absorption from reflected sunlight over the globe. However, we are interested in the CO2 profile, i.e., the concentration of CO2 at different altitudes. Transport/atmospheric models along with expert knowledge are used to develop a generative model that can relate the CO2 profiles to its corresponding spectra.
+            </p>
+            <img src="assets/images/CO2_model.png" alt="CO2 model SBI" class="img">
+            <p>
+                The model relates the quantity of interest to the (modelled) input information. Simultaneously, we have observed output information. To get the CO2 profile information from a sattelite-based CO2 spectrum a simulation-based approach is used.
+            <ul>
+                <li> Start with some initial CO2 profile and simulate through the model corresponding model-based spectrum.</li>
+                <li> Measure the discrepancy between the model-based and the observed spectrum via some loss function</li>
+                <li> Update the CO2 profile such that the discrepancy between the model-
+based and the observed spectrum is minimized</li>
+                <li> Repeat the above steps until convergence</li>
+            </ul>
+            </p>
+            <p>
+                SBI is a powerful technique for estimating model parameters when the <strong>likelihood function</strong> is <strong>intractable</strong>, meaning it's impossible or very difficult to calculate. Instead of relying on complex equations, SBI leverages the power of computer simulations. We simulate data from our model using a wide range of parameter values. Then, we train a machine learning algorithm—like a neural network—to learn the relationship between the parameters we used and the data that was generated. This trained network can then take real-world data and infer the most likely parameters that produced it.
+            </p>
+        </section>
+        <section class="section">
+            <h2>BayesFlow: Your SBI Toolkit</h2>
+            <p>
+                While SBI sounds complex, tools like <strong>BayesFlow</strong> make it accessible to researchers and developers. BayesFlow is a Python library that automates the entire SBI workflow. It uses a clever combination of neural networks to learn the intricate relationship between your model's parameters and the data it produces. Specifically, it uses a <strong>summary network</strong> to condense trial-level data into a concise format and an <strong>inference network</strong> to transform a simple distribution into a complex <strong>posterior distribution</strong> of your parameters.
+            </p>
+            <p>
+                This modular approach is what makes BayesFlow so powerful. It handles the heavy lifting of the neural network training, allowing you to focus on your scientific model.
+            </p>
+            <p>
+                To get started, you can find the official documentation and installation instructions on the <a href="https://github.com/bayesflow-org/bayesflow/blob/main/README.md" target="_blank">BayesFlow GitHub page</a>.
+            </p>
+        </section>
+        <section class="section">
+            <h2>Understanding the Drift Diffusion Model (DDM)</h2>
+            <p>
+                The goal of our project is to understand how humans take decisions under time pressure (or the lack of it). For this we use a type of Evidence Accumulation Model (EAM) called the <strong>Drift Diffusion Model (DDM)</strong>. EAMs are a class of cognitive models that explain how decisions are made by accumulating evidence over time until a certain threshold is reached. The DDM is particularly useful for modeling two-choice decision-making tasks, where an individual must choose between two alternatives based on noisy evidence.
+            </p>
+            <p>
+
+                Before we dive into our project, let's get a feel for what Evidence Accumulation Models are all about. Evidence accumulation models are ways to describe how people make decisions when faced with uncertain information. The idea is that your brain doesn't instantly know the answer—it collects evidence over time, like filling up a bucket, until there's enough to make a choice.
+            </p>
+            <p>
+                The drift diffusion model (DDM) is one of the most common versions. Imagine you’re deciding whether a blurry picture shows a cat or a dog:
+                <ul>
+                    <li>You start at a neutral point (not sure yet).</li>
+                    <li>As you look, your brain gathers small bits of evidence.</li>
+                    <li>Evidence for “cat” pushes your decision signal upward; evidence for “dog” pushes it downward.</li>
+                    <li>This “signal” drifts around because evidence can be noisy.</li>
+                    <li>When it finally hits a boundary (enough evidence for cat OR dog), you make your choice.</li>
+                </ul>
+            </p>
+            <img src="assets/images/ddm_model_image.png" alt="Drift Diffusion Model" class="img">
+            <p>
+                Mathematically, the change in accumulated evidence x over small timestep dt is given by:
+                <p>
+                    $$ dx = \nu \cdot dt + s \cdot \sqrt{dt} \cdot N(0,1) $$
+                </p>
+            where \(\nu\) is the drift rate representing the average rate of evidence accumulation. The noise term N(0,1) captures random fluctuations in evidence accumulation. 
+            </p>
+            <p>
+                The decision is made when the accumulated evidence x reaches one of two boundaries: an upper boundary (for one choice) or a lower boundary (for the other choice). The distance to these boundaries represents the amount of evidence needed to make a decision. A higher boundary means more evidence is required, leading to slower but more accurate decisions. Conversely, a lower boundary allows for quicker decisions but increases the chance of errors.
+            </p>
+            <p>
+                The threshold used here follows an expenentially collapsing boundary, which means the amount of evidence needed to make a decision decreases over time. This models the psychological effect of urgency as a deadline approaches.
+            </p>
+            <p>
+                $$ a(t) = \alpha_{0} \cdot (1 - e^{k \cdot (t_{max} - t)}) $$
+            </p>
+            <p>
+                So, the DDM is like a noisy race between two options, where the brain’s decision emerges once enough evidence has accumulated to confidently favor one side.
+            </p>
+        </section>
+        <section class="section">
+            <h2>Our Project: A Deep Dive into Collapsing Boundaries</h2>
+            <p>
+                While previous work found that linear collapsing boundaries fit deadline conditions better than fixed ones , we wanted to investigate if an exponentially collapsing boundary could provide an even better fit. This non-linear approach might more realistically capture how human urgency builds as time runs out.
+            </p>
+            <h3>Implementation Details</h3>
+            <p>
+                We used the BayesFlow library to implement our inference framework. The process involved:
+            </p>
+            <ol>
+                <li><strong>Statistical Modeling:</strong> We defined our DDM with three key parameters: drift rate \(\nu\), exponential decay rate (k), and initial boundary height \(\alpha_0\). We chose informative priors for these parameters based on prior research to ensure stable inference.</li>
+                <li><strong>Approximation:</strong> BayesFlow used a DeepSet architecture for its summary network, which is perfect for handling trial data in any order. For the inference network, we used a FlowMatching normalizing flow model, which is excellent at approximating complex, non-Gaussian posterior distributions.</li>
+                <li><strong>Training:</strong> We trained the model on a pre-generated dataset of 5,000 samples to save on computation, as simulating the DDM is computationally expensive. The model was trained for 50 epochs.</li>
+            </ol>
+            Further details can be found in <a href="https://github.com/anirudhparameswaran/bayesflow-ddm/blob/main/DDM_main.ipynb">this notebook.</a>
+
+            Here is a visualization of the training data:
+            <img src="assets/images/trainin_data_distribution.png" alt="Training data visualization" class="img">
+        </section>
+        <section class="section">
+            <h2>Key Findings and Limitations</h2>
+            <p>
+                Our results were a mix of success and challenges:
+            </p>
+            <img src="assets/images/fit.png" alt="Ground truth vs estimate" class="img">
+            <ul>
+                <li><strong>Drift Rate Recovery:</strong> The model successfully recovered the drift rate \(\nu \), and our findings aligned with behavioral data—drift rate was highest in speed-cued conditions with deadlines. This confirms that SBI is effective at capturing dominant cognitive signals.</li>
+                <li><strong>Boundary Parameter Challenges:</strong> However, the exponential decay rate (k) and initial boundary height \(\alpha_0\) proved much more difficult to recover reliably. Our diagnostics showed a weak signal from these parameters, as their effects only become noticeable late in a trial, making them hard to distinguish from random noise.</li>
+            </ul>
+            <img src="assets/images/estimates.png" alt="Posterior distributions" class="img">
+            <p>
+                This highlights a key lesson: while complex models can add psychological realism, they can also complicate inference if the parameters are not easily identifiable from the data[cite: 534].
+            </p>
+            <p>
+                For more details on our findings, including the ground truth vs. estimate plots and posterior distributions, you can view the full project report on my <a href="https://github.com/anirudhparameswaran/bayesflow-ddm">GitHub.</a>
+            </p>
+        </section>
+        <section class="section">
+            <h2>Conclusion</h2>
+            <p>
+                Our project demonstrates the incredible potential of Simulation-Based Inference for analyzing complex cognitive models, but also underscores the importance of parameter identifiability. Tools like BayesFlow provide a powerful framework for this work, and our findings set the stage for future research into hierarchical inference and alternative boundary formulations.
+            </p>
+            <p>
+                By sharing this project, we hope to provide a hands-on example of applying SBI to real-world data and inspire others to explore this exciting field of computational neuroscience and cognitive modeling.
+            </p>
+        </section>
+        <section class="section">
+            <h3>Resources & Further Reading</h3>
+            <ul>
+                <li><a href="https://bayesflow.org/" target="_blank">BayesFlow Official Website</a></li>
+                <li><a href="https://github.com/bayesflow-org/bayesflow/blob/main/README.md" target="_blank">BayesFlow Installation Guide</a></li>
+                <li><a href="https://link.springer.com/chapter/10.1007/978-3-031-45271-0_4" target="_blank">An Introduction to the Diffusion Model of Decision-Making</a></li>
+                <li><a href="https://link.springer.com/article/10.1007/s42113-020-00074-y#Tab4" target="_blank">Original Research Article on Speed-Accuracy Trade-off</a></li>
+            </ul>
+        </section>
+    </main>
+</body>
+</html>
