@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Design of Experiments: Comparing GA and LHS Designs</title>
+    <link rel="stylesheet" href="sun_sail_styles.css">
+</head>
+<body>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <a href="index.html" class="back-btn">&#8592; Back</a>
+    <header>
+        <h1>Case Study: Computer Experiments</h1>
+        <p class="title">Comparing Genetic Algorithms and LHS Designs</p>
+    </header>
+    <main>
+        <section class="section">
+            <p>
+                For the past few weeks, I have been working on a project “Computer Experiments” as part of my Case Studies course at TU Dortmund. We have delved into the world of structural analysis and the world of Finite Element Method analysis and surrogate models. This post aims to capture the ideas behind the project and an implementation of some <a href="https://www.sciencedirect.com/science/article/pii/S221138352030049X">interesting research</a> I found.
+            </p>
+            <h2>Snow Load on a Sun-Sail</h2>
+            <p>
+                This is a sun-sail structure used for providing shade outdoors. It looks great, but what happens when a massive snowstorm hits? We need to know the exact load that will make it fail.
+            </p>
+            <figure>
+                <img src="assets/images/sunsail_photo.png" alt="Sun-sail Structure" class="img">
+                <figcaption>Sun-sail structure used for shade</figcaption>
+            </figure>
+                To do this, engineers build a super-detailed virtual model of the sail. This is where Finite Element Method (FEM) Analysis comes in.
+
+                We break this complex object into thousands of tiny, simple pieces (elements) and then use differential equations to model how each piece reacts to a force (like a snow load). <a href="https://en.wikipedia.org/wiki/Finite_element_method">Finite Element Method is a popular method for numerically solving differential equations arising in engineering and mathematical modeling.</a> When you put all those little pieces together, you get the big picture of how the whole structure behaves.
+            </p>
+        </section>
+        <section class="section">
+            <h2>The Computational Challenge</h2>
+            <p>
+                <a href="https://www.kratosmultiphysics.org/">KratosMultiphysics</a> provides specialized functions for implementing finite method analysis models. However, these simulations have a high computational cost. This is because it needs to solve ODEs for all particles and aggregate the results for each point. Thus, getting results for multiple snow loads for a complete analysis is not possible. Surrogate models come into the picture here; these are machine learning models whose job is to approximate the results of the expensive FEM model. These models can be anything - simple linear regressors, neural networks, random forests, etc.
+            </p>
+            <p>
+                Our process involves:
+            </p>
+            <ul>
+                <li>Run the expensive FEM analysis on a small budget (n=200 points)</li>
+                <li>Train the surrogate model based on these results.</li>
+                <li>Use the surrogate model for near-instant inference.</li>
+            </ul>
+        </section>
+
+        <section class="section">
+            <h2>Design of Experiments</h2>
+            <p>
+                Since we have to run the FEM model for the data points, we have a choice to make: Which 200 Points to Pick?
+            </p>
+            <p>
+            This is the make-or-break part of our whole plan. Our fast model is only as good as the 200 training points we feed it. We have a huge "design space" (material properties, etc.), and we need to choose the points that represent that space as best as possible.
+            </p>
+            <p>
+            We can pick our points either:
+            </p>
+            <ul>
+                <li><strong>Statically:</strong> Select all 200 points at the start, run them, and then train the model.</li>
+                <li><strong>Sequentially:</strong> Select a few, run them, analyze the results to see where we need more information, and then pick the next few points smartly.</li>
+            </ul>
+            <p>
+                In this blog, we're focusing on the static design selection and picking all 200 points upfront. We're going to compare two methods: Latin Hypercube Sampling (LHS) and Genetic Algorithms. How do these three methods work?
+            </p>
+            <ul>
+                <li><strong><a href="https://smt.readthedocs.io/en/v2.9.1/_src_docs/sampling_methods/lhs.html">Latin Hypercube Sampling (LHS):</a></strong> A technique that ensures each variable is sampled equally across its range, preventing clusters of points.</li>
+                <li><strong><a href="https://www.geeksforgeeks.org/dsa/genetic-algorithms/">Genetic Algorithms (GA):</a></strong> An evolutionary optimization method that "breeds" and "mutates" sets of points to achieve an optimal distribution based on a mathematical criterion.</li>
+            </ul>
+        </section>
+
+        <section class="section">
+            <h2>Model Parameters and Optimality</h2>
+            <p>
+                The following parameters define the structural properties of our sun-sail. We need to find the best way to sample the non-determinitic parameters to train our surrogate models effectively:
+            </p>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Part</th>
+                        <th>Parameter</th>
+                        <th>Symbol</th>
+                        <th>Unit</th>
+                        <th>Distrib.</th>
+                        <th>Mean</th>
+                        <th>Std.</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Membrane -->
+                    <tr>
+                        <td>Membrane</td>
+                        <td>Young's modulus</td>
+                        <td>\(E_{mem}\)</td>
+                        <td>GPa</td>
+                        <td>Lognormal</td>
+                        <td>0.6</td>
+                        <td>0.09</td>
+                    </tr>
+                    <tr>
+                        <td>Membrane</td>
+                        <td>Poisson's ratio</td>
+                        <td>\(\nu_{mem}\)</td>
+                        <td></td>
+                        <td>Uniform</td>
+                        <td>0.4</td>
+                        <td>0.0115</td>
+                    </tr>
+                    <tr>
+                        <td>Membrane</td>
+                        <td>Thickness</td>
+                        <td>\(t_{mem}\)</td>
+                        <td>mm</td>
+                        <td>Deterministic</td>
+                        <td>1</td>
+                        <td></td>
+                    </tr>
+                    <tr>
+                        <td>Membrane</td>
+                        <td>Pre-stress</td>
+                        <td>\(\sigma_{mem}\)</td>
+                        <td>MPa</td>
+                        <td>Lognormal</td>
+                        <td>4</td>
+                        <td>0.8</td>
+                    </tr>
+                    <tr>
+                        <td>Membrane</td>
+                        <td>Surface loading</td>
+                        <td>\(f_{mem}\)</td>
+                        <td>kPa</td>
+                        <td>Gumbel</td>
+                        <td>0.4</td>
+                        <td>0.12</td>
+                    </tr>
+                    <tr>
+                        <td>Membrane</td>
+                        <td>Rupture stress</td>
+                        <td>\(\sigma_{mem,y}\)</td>
+                        <td>MPa</td>
+                        <td>Lognormal</td>
+                        <td>11</td>
+                        <td>1.650</td>
+                    </tr>
+
+                    <!-- Truss -->
+                    <tr>
+                        <td>Truss</td>
+                        <td>Young's modulus</td>
+                        <td>\(E_{tru}\)</td>
+                        <td>GPa</td>
+                        <td>Deterministic</td>
+                        <td>205</td>
+                        <td></td>
+                    </tr>
+                    <tr>
+                        <td>Truss</td>
+                        <td>Cross sectional area</td>
+                        <td>\(A_{tru}\)</td>
+                        <td>cm²</td>
+                        <td>Deterministic</td>
+                        <td>25</td>
+                        <td></td>
+                    </tr>
+
+                    <!-- Edge Cable -->
+                    <tr>
+                        <td>Edge Cable</td>
+                        <td>Young's modulus</td>
+                        <td>\(E_{edg}\)</td>
+                        <td>GPa</td>
+                        <td>Deterministic</td>
+                        <td>205</td>
+                        <td></td>
+                    </tr>
+                    <tr>
+                        <td>Edge Cable</td>
+                        <td>Diameter</td>
+                        <td>\(d_{edg}\)</td>
+                        <td>mm</td>
+                        <td>Deterministic</td>
+                        <td>12</td>
+                        <td></td>
+                    </tr>
+                    <tr>
+                        <td>Edge Cable</td>
+                        <td>Pre-stress</td>
+                        <td>\(\sigma_{edg}\)</td>
+                        <td>MPa</td>
+                        <td>Lognormal</td>
+                        <td>353.678</td>
+                        <td>70.735</td>
+                    </tr>
+
+                    <!-- Support Cable -->
+                    <tr>
+                        <td>Support Cable</td>
+                        <td>Young's modulus</td>
+                        <td>\(E_{sup}\)</td>
+                        <td>GPa</td>
+                        <td>Deterministic</td>
+                        <td>205</td>
+                        <td></td>
+                    </tr>
+                    <tr>
+                        <td>Support Cable</td>
+                        <td>Diameter</td>
+                        <td>\(d_{sup}\)</td>
+                        <td>mm</td>
+                        <td>Deterministic</td>
+                        <td>12</td>
+                        <td></td>
+                    </tr>
+                    <tr>
+                        <td>Support Cable</td>
+                        <td>Pre-stress</td>
+                        <td>\(\sigma_{sup}\)</td>
+                        <td>MPa</td>
+                        <td>Lognormal</td>
+                        <td>400.834</td>
+                        <td>80.166</td>
+                    </tr>
+                </tbody>
+            </table>
+            <p>
+                Here, <td>\(\sigma_{mem, y}\)</td> is the maximal rupture stress and is not an input to the model.
+            </p>
+            <p>
+                Based on these distributions, we need to sample 200 points based on our design. We use the <a href="https://docs.scipy.org/doc/scipy-1.16.1/reference/generated/scipy.stats.qmc.LatinHypercube.html#latinhypercube">scipy.stats.qmc.LatinHypercube</a> module for building an LHS sample out of the box. We then use this sample as input for the genetic algorithm. The file lhs_optimizer.py contains the code.
+            </p>
+            <p>
+                To optimize the point distribution, we use the <strong>Force Criterion \(G(L)\)</strong>. This treats sample points as electrically charged particles, minimizing the sum of their repulsive forces:
+                $$G(L):=\sum_{i=1}^{N}\sum_{j=i+1}^{N}\frac{1}{||x_{i}-x_{j}||^{2}}$$
+            </p>
+            <p>
+                The initial Latin Hypercube Sample (LHS) is fed into a <strong>Genetic Algorithm (GA)</strong>,
+                which constructs a population of <strong>50 LHS samples</strong> and evolves them over
+                <strong>5000 iterations</strong>. 
+                </p>
+
+                <h4>Out-of-the-box LHS</h4>
+
+                <pre>
+                Minimum Distance Squared (d(L)) : 0.046
+                Min Distance Occurrences (n(L)): 1
+                Force Criterion (G(L))         : 22149.1128
+                </pre>
+
+                <h4>Genetic Algorithm Optimization</h4>
+                <pre>
+                Initial G(L): 21900.851242
+
+                Stopping criterion met at generation 2290
+
+                Final G(L): 20421.162951
+                Minimum Distance Squared (d(L)) : 0.234
+                Min Distance Occurrences (n(L)): 8
+                Force Criterion (G(L))         : 20421.163
+                </pre>
+
+                <h4>Maximin LHS (Best of 50 Runs)</h4>
+
+                <pre>
+                Minimum Distance Squared (d(L)) : 0.068
+                Min Distance Occurrences (n(L)): 1
+                Force Criterion (G(L))         : 22154.941
+                </pre>
+        </section>
+
+        <p>
+            Here we can see that the Genetic Algorithm gives a sample with the largest minimum distance between the closest points and the lowest \(G(L)\) value, indicating a more optimal spread of points in the design space.
+        </p>
+
+<section class="section">
+  <h2>Fitting a Gaussian Process</h2>
+
+  <p>
+    To enable efficient inference, we now construct a surrogate model of the system.
+    We use <strong>Gaussian Process Regression (GPR)</strong>, a probabilistic and
+    non-parametric method that places a distribution over functions rather than fitting
+    a single deterministic model.
+  </p>
+
+  <p>
+    An <strong>RBF kernel</strong>, scaled by a constant factor, is employed, and the kernel
+    hyperparameters are optimized during training. In addition to point predictions,
+    GPR provides an associated <em>predictive standard deviation</em>, which is particularly
+    valuable for quantifying uncertainty and assessing confidence in individual predictions.
+  </p>
+
+  <p>
+    The model is fitted using the
+    <a href="https://scikit-learn.org/stable/modules/generated/sklearn.gaussian_process.GaussianProcessRegressor.html" target="_blank">
+      GaussianProcessRegressor
+    </a>
+    class from <code>scikit-learn</code>.
+  </p>
+
+  <h3>Model Performance</h3>
+
+  <h4>GA-Optimized Design</h4>
+  <pre>
+R² (Train) : 1.000000
+R² (Test)  : 0.999011
+MSE (Train): 6.232487e-11
+MSE (Test) : 364.330749
+  </pre>
+
+  <h4>Simple LHS Design</h4>
+  <pre>
+R² (Train) : 1.000000
+R² (Test)  : 0.995251
+MSE (Train): 1.152095e-10
+MSE (Test) : 1752.885582
+  </pre>
+
+  <div>
+  <div class="gp-figures">
+    <figure>
+      <img
+        src="assets/images/gp_true_v_predicted_GA.png"
+        alt="Gaussian Process Regression: True vs Predicted for GA-optimized design"
+        class="img"
+      >
+      <figcaption>Gaussian Process Regression — True vs Predicted (GA-optimized)</figcaption>
+    </figure>
+
+    <figure>
+      <img
+        src="assets/images/gp_true_v_predicted_LHS.png"
+        alt="Gaussian Process Regression: True vs Predicted for simple LHS design"
+        class="img"
+      >
+      <figcaption>Gaussian Process Regression — True vs Predicted (Simple LHS)</figcaption>
+    </figure>
+  </div>
+  </div>
+
+  <p>
+    <em>
+      This study confirms that optimizing the design of experiments using Genetic Algorithms
+      can substantially improve the accuracy and reliability of surrogate models for
+      complex structural engineering problems.
+    </em>
+  </p>
+</section>
+
+    </main>
+</body>
+</html>

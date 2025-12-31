@@ -1,0 +1,114 @@
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: #f9f9f9;
+    color: #222;
+    margin: 0;
+    padding: 0;
+}
+header {
+    background: #2d3e50;
+    color: #fff;
+    padding: 2rem 1rem 1rem 1rem;
+    text-align: center;
+}
+main {
+    max-width: 800px;
+    margin: 2rem auto;
+    background: #fff;
+    padding: 2rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+}
+h1, h2, h3 {
+    color: #2d3e50;
+}
+.title {
+    font-size: 1.6rem;
+    margin-bottom: 0.5rem;
+    font-weight: 300;
+}
+.gp-figures {
+    display: flex;
+    gap: 1rem;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin: 1.5rem 0;
+}
+figure {
+    margin: 0;
+    flex: 1 1 48%;
+    max-width: none;
+    text-align: center;
+}
+figure img {
+    display: block;
+    width: 100%;
+    height: auto;
+    margin: 0 auto;
+    border-radius: 6px;
+}
+figcaption {
+    font-size: 0.95rem;
+    color: #555;
+    margin-top: 0.5rem;
+    font-style: italic;
+}
+.section {
+    margin-bottom: 2.5rem;
+}
+ul, ol {
+    margin-left: 1.5rem;
+    line-height: 1.6;
+}
+p {
+    line-height: 1.6;
+}
+/* Table Styling for Parameters */
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1.5rem 0;
+    font-size: 0.9rem;
+}
+th, td {
+    padding: 12px;
+    text-align: left;
+    border-bottom: 1px solid #eee;
+}
+th {
+    background-color: #f4f7f9;
+    color: #2d3e50;
+}
+code {
+    background: #f4f4f4;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-family: 'Courier New', monospace;
+    font-size: 0.95em;
+}
+.back-btn {
+  position: absolute;
+  top: 24px;
+  left: 32px;
+  padding: 8px 18px;
+  background: #7f5eff;
+  color: #fff;
+  border-radius: 22px;
+  font-size: 1rem;
+  font-weight: 500;
+  text-decoration: none;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.10);
+  transition: background 0.2s;
+}
+.back-btn:hover {
+  background: #333;
+}
+@media (max-width: 600px) {
+    main {
+        padding: 1rem;
+    }
+    table {
+        display: block;
+        overflow-x: auto;
+    }
+}
