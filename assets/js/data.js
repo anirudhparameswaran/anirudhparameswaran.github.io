@@ -126,7 +126,7 @@ const RESUME = {
     items: [
       {
         title: "Amortized Bayesian Parameter Estimation in Cognitive Models",
-        link: "http://anirudhparameswaran.me/bayesflow.html",
+        link: "backup/bayesflow.html",
         stack: "Python · BayesFlow · PyTorch · Simulation-Based Inference",
         bullets: [
           "Formulated a Drift Diffusion Model to simulate reaction-time distributions and error rates under speed–accuracy tradeoffs.",
@@ -135,7 +135,7 @@ const RESUME = {
       },
       {
         title: "Surrogate Modelling & Uncertainty Quantification in Solar Sails",
-        link: "http://anirudhparameswaran.me/design_of_experiments.html",
+        link: "backup/design_of_experiments.html",
         stack: "Python · Genetic Algorithms · Gaussian Process Regression · SVR",
         bullets: [
           "Engineered a GA-optimised Latin Hypercube Sampling design-of-experiments framework to emulate computationally intensive FEM simulations.",
